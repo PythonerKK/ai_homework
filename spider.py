@@ -1,7 +1,7 @@
 """
     :author: 李沅锟
     :url: http://github.com/PythonerKK
-    :copyright: © 2019 KK <705555262@qq.com.com>
+    :copyright: © 2019 KK <705555262@qq.com>
 """
 import asyncio
 import re
@@ -26,10 +26,24 @@ stop = False
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'
 }
-MAX_PAGE = 2 # 最大爬取页数
-TABLE_NAME = 't'  #数据表名
+district = {
+    #'tianhe': '天河',
+    # 'yuexiu': '越秀',
+    # 'liwan': '荔湾',
+    # 'haizhu': '海珠',
+    # 'panyu': '番禺',
+    # 'baiyun': '白云',
+    # 'huangpugz': '黄埔',
+    # 'conghua': '从化',
+    # 'zengcheng': '增城',
+    # 'nansha': '南沙',
+    'huadou': '花都'
+}
+current_district = ''
+MAX_PAGE = 50 # 最大爬取页数
+TABLE_NAME = 'guangzhou_all'  #数据表名
 city = 'gz'  #城市简写
-url = 'https://{}.lianjia.com/ershoufang/pg{}/'  #url地址拼接
+url = 'https://{}.lianjia.com/ershoufang/{}/pg{}/'  #url地址拼接
 urls = []  #所有页的url列表
 links_detail = set()  #爬取中的详情页链接的集合
 crawled_links_detail = set()  #爬取完成的链接集合，方便去重
@@ -70,7 +84,7 @@ def extract_elements(source):
         title = dom.xpath('//title/text()')[0]
         price = dom.xpath('//span[@class="unitPriceValue"]/text()')[0]
         information = dict(re.compile('<li><span class="label">(.*?)</span>(.*?)</li>').findall(source))
-        information.update(title=title, price=price, url=id)
+        information.update(title=title, price=price, url=id, district=current_district)
         print(information)
         asyncio.ensure_future(save_to_database(information, pool=pool))
 
@@ -96,9 +110,6 @@ async def save_to_database(information, pool):
                 await cur.execute("SELECT * FROM  %s" % (TABLE_NAME))
                 await cur.execute("INSERT INTO %s VALUES (%s)"%(TABLE_NAME, ROWstr[:-1]))
                 print('插入数据成功')
-            except aiomysql.Error as e:
-                await cur.execute("CREATE TABLE %s (%s)" % (TABLE_NAME, COLstr[:-1]))
-                await cur.execute("INSERT INTO %s VALUES (%s)" % (TABLE_NAME, ROWstr[:-1]))
             except aiomysql.Error as e:
                 print('mysql error %d: %s' % (e.args[0], e.args[1]))
 
@@ -135,14 +146,18 @@ async def consumer():
 
 async def main(loop):
     global pool
+    global current_district
     pool = await aiomysql.create_pool(host=HOST, port=3306,
                                       user=USERNAME, password=PASSWORD,
                                       db=DB, loop=loop, charset='utf8',
                                       autocommit=True)
 
-    for i in range(1, MAX_PAGE):
-        urls.append(url.format(city, str(i)))
-    print('爬取总页数：{} 任务开始...'.format(str(MAX_PAGE)))
+    for dis in district.keys():
+        current_district = district[dis]
+        print("当前区域：" + current_district)
+        print('爬取 {} 总页数：{} 任务开始...'.format(current_district, str(MAX_PAGE)))
+        for i in range(1, MAX_PAGE):
+            urls.append(url.format(city, dis, str(i)))
     asyncio.ensure_future(consumer())
 
 if __name__ == '__main__':

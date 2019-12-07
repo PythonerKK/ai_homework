@@ -1,13 +1,14 @@
 """
     :author: 李沅锟
     :url: http://github.com/PythonerKK
-    :copyright: © 2019 KK <705555262@qq.com.com>
+    :copyright: © 2019 KK <705555262@qq.com>
     :数据预处理
 """
 import pandas as pd
 
-data = pd.read_csv("guangzhou.csv", encoding="utf-8")
+data = pd.read_csv("./data/guangzhou_all.csv", encoding="utf-8")
 house_type = data['房屋户型']
+print(data)
 room_nums = [r.split('室')[0] for r in house_type]
 living_room_nums = [lr.split('厅')[0].split('室')[1] for lr in house_type]
 kitchen_nums = [k.split('厨')[0].split('厅')[1] for k in house_type]
@@ -42,4 +43,4 @@ data = data.sort_values('price', ascending=True)
 
 #data = data.iloc[:, 1:]
 print(data)
-data.to_csv("guangzhou_ok.csv", encoding="utf-8")
+data.to_csv("./data/guangzhou_ok.csv", encoding="utf-8")

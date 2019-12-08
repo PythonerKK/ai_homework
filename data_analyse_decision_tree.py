@@ -7,10 +7,8 @@
 import pandas as pd
 import numpy as np
 from pandas import DataFrame
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import make_scorer, r2_score
 from sklearn.tree import DecisionTreeRegressor
-
 from sklearn.model_selection import train_test_split, KFold, GridSearchCV
 
 
@@ -18,7 +16,7 @@ data = pd.read_csv("./data/guangzhou_ok.csv", encoding="utf-8")
 # 删除第一列
 data = data.iloc[:, 1:]
 
-def transform_to_onehot(data, *features) -> DataFrame:
+def transform_to_onehot(data: DataFrame, *features) -> DataFrame:
     """把中文特征转为数值型特征"""
     _data = data.copy()
     for feature in features:
@@ -53,22 +51,22 @@ def performance_metric(y_true, y_predict):
 def fit_model(X, y):
     """测试模型"""
     cross_validator = KFold(10, shuffle=True) # 通过交叉认证缓解数据集过拟合的现象
-    regressor = DecisionTreeRegressor() # 建立决策树回归模型
+    clf = DecisionTreeRegressor() # 建立决策树回归模型
     params = {'max_depth': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
     scoring_fnc = make_scorer(performance_metric)
     # 通过GridSearchCV找到最优深度参数（基于输入数据[X,y] 利于网格搜索找到最优的决策树模型）
-    grid = GridSearchCV(estimator=regressor, param_grid=params,
+    grid = GridSearchCV(estimator=clf, param_grid=params,
                         scoring=scoring_fnc, cv=cross_validator)
     # 网格搜索
     grid = grid.fit(X, y)
     return grid.best_estimator_
 
 
-optimal = fit_model(features_train, prices_train)
+estimator = fit_model(features_train, prices_train)
 # 输出最优模型的参数 'max_depth'
-print(f"最优参数max_depth是:{optimal.get_params()['max_depth']}")
+print(f"最优参数max_depth是:{estimator.get_params()['max_depth']}")
 
-predicted_value = optimal.predict(features_test)
+predicted_value = estimator.predict(features_test)
 r2 = performance_metric(prices_test, predicted_value)
 
 # 每次交叉验证得到的数据集不同，因此每次运行的结果也不一定相同
